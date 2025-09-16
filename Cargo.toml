@@ -5,6 +5,11 @@ authors = ["wingfoil@wingfoil.io"]
 edition = "2024"
 publish = ["wingfoil", "crates-io"]
 license = "Apache-2.0"
+keywords = ["graph", "stream", "dag", "hft", "trading", "ai"]
+homepage = "https://github.com/wingfoil-io/wingfoil/"
+documentation = "https://docs.rs/wingfoil"
+description = "graph based stream processing framework"
+
 [lib]
 name="wingfoil"
 [package.metadata.docs.rs]
