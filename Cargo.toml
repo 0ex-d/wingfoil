@@ -3,7 +3,7 @@ name = "wingfoil"
 version = "0.1.4"
 authors = ["wingfoil@wingfoil.io"]
 edition = "2024"
-publish = ["wingfoil"]
+publish = ["wingfoil", "crates-io"]
 license = "Apache-2.0"
 [lib]
 name="wingfoil"
