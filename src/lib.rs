@@ -15,7 +15,7 @@
 //! ```rust
 //! use wingfoil::*;
 //! use std::time::Duration;
-
+//! 
 //! fn main() {
 //!     let period = Duration::from_millis(10);
 //!     let source = ticker(period).count(); // 1, 2, 3 etc
@@ -91,6 +91,14 @@
 //! In Realtime mode the log statements are written every second.  In Historical mode the log statements are written
 //! immediately.   In both cases engine time advances by 1 second between each tick.
 //!
+#![doc = include_str!("../examples/order_book/README.md")]
+//! See the [order book example](https://github.com/wingfoil-io/wingfoil/blob/main/examples/order_book/) for more details.
+#![doc = include_str!("../examples/async/README.md")]
+//! See the [async example](https://github.com/wingfoil-io/wingfoil/blob/main/examples/async/) for more details.
+#![doc = include_str!("../examples/breadth_first/README.md")]
+//! See the [breadth first example](https://github.com/wingfoil-io/wingfoil/blob/main/examples/breadth_first/) for more details.
+#![doc = include_str!("../examples/rfq/README.md")]
+//! See the [rfq example](https://github.com/wingfoil-io/wingfoil/blob/main/examples/rfq/) for more details.
 //!
 //! ## Multithreading
 //!
@@ -127,6 +135,7 @@
 extern crate log;
 extern crate derive_new;
 
+pub mod adapters;
 
 mod bencher;
 mod channel;
