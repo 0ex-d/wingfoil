@@ -35,7 +35,6 @@ hello, world 3
 ```
 
 
-<!--
-Website | Guides | API Docs | Chat
-Read the docs or jump straight into some examples.
--->
+You can download from [crates.io](https://crates.io/crates/wingfoil/),
+read the [documentation](https://docs.rs/wingfoil/latest/wingfoil/) 
+or jump straight into the [examples.](https://github.com/wingfoil-io/wingfoil/tree/main/examples)
