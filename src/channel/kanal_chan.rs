@@ -6,6 +6,7 @@ use std::option::Option;
 use std::pin::Pin;
 
 use super::message::{Message, ReceiverMessageSource};
+use super::{SendNodeError, SendResult};
 use crate::graph::{GraphState, ReadyNotifier, RunMode};
 use crate::queue::ValueAt;
 use crate::time::NanoTime;
@@ -77,14 +78,23 @@ impl<T: Element + Send> ChannelSender<T> {
         self.ready_notifier = Some(notifier);
     }
 
-    pub fn send_message(&self, message: Message<T>) {
-        self.kanal_sender.as_ref().unwrap().send(message).unwrap();
+    pub fn send_message(&self, message: Message<T>) -> SendResult {
+        let sender = self
+            .kanal_sender
+            .as_ref()
+            .ok_or(SendNodeError::ChannelClosed)?;
+        sender
+            .send(message)
+            .map_err(|_| SendNodeError::ChannelClosed)?;
         if let Some(notifier) = &self.ready_notifier {
-            notifier.notify();
+            notifier
+                .notify()
+                .map_err(|_| SendNodeError::NotifierClosed)?;
         }
+        Ok(())
     }
 
-    pub fn send(&self, state: &GraphState, value: T) {
+    pub fn send(&self, state: &GraphState, value: T) -> SendResult {
         let message = match state.run_mode() {
             RunMode::HistoricalFrom(_) => {
                 let value_at = ValueAt::new(value, state.time());
@@ -92,18 +102,22 @@ impl<T: Element + Send> ChannelSender<T> {
             }
             RunMode::RealTime => Message::RealtimeValue(value),
         };
-        self.send_message(message);
+        self.send_message(message)
     }
 
-    pub fn send_checkpoint(&self, state: &GraphState) {
+    pub fn send_checkpoint(&self, state: &GraphState) -> SendResult {
         let message = Message::CheckPoint(state.time());
-        self.send_message(message);
+        self.send_message(message)
     }
 
-    pub fn close(&mut self) {
-        let message = Message::EndOfStream;
-        self.send_message(message);
+    pub fn close(&mut self) -> SendResult {
+        // check if already close
+        if self.kanal_sender.is_none() {
+            return Ok(());
+        }
+        let result = self.send_message(Message::EndOfStream);
         self.kanal_sender = None;
+        result
     }
 
     pub fn into_async(self) -> AsyncChannelSender<T> {
