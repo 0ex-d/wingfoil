@@ -2,7 +2,7 @@ use crate::queue::HashByRef;
 use crate::queue::TimeQueue;
 use crate::types::{NanoTime, Node};
 
-use crossbeam::channel::{Receiver, Sender, select};
+use crossbeam::channel::{Receiver, SendError, Sender, select};
 use lazy_static::lazy_static;
 use std::cmp::{max, min};
 use std::collections::HashMap;
@@ -63,7 +63,11 @@ impl RunFor {
 }
 
 fn average_duration(duration: Duration, n: u32) -> Duration {
-    let avg_nanos = if n == 0 { 0 } else { duration.as_nanos() / n as u128 };
+    let avg_nanos = if n == 0 {
+        0
+    } else {
+        duration.as_nanos() / n as u128
+    };
     Duration::from_nanos(avg_nanos as u64)
 }
 
@@ -78,8 +82,8 @@ pub(crate) struct ReadyNotifier {
 }
 
 impl ReadyNotifier {
-    pub fn notify(&self) {
-        self.sender.send(self.node_index).unwrap();
+    pub fn notify(&self) -> anyhow::Result<(), SendError<usize>> {
+        self.sender.send(self.node_index)
     }
 }
 
@@ -411,7 +415,12 @@ impl Graph {
         let mut end_cycle = u32::MAX;
         let mut is_realtime = false;
         let mut start_time = NanoTime::ZERO;
-        self.resolve_start_end(&mut start_time, &mut end_time, &mut end_cycle, &mut is_realtime);
+        self.resolve_start_end(
+            &mut start_time,
+            &mut end_time,
+            &mut end_cycle,
+            &mut is_realtime,
+        );
         self.state.start_time = start_time;
         loop {
             if self.state.result.is_some() {
@@ -427,7 +436,8 @@ impl Graph {
                 );
                 break;
             }
-            if !self.state.is_last_cycle && (cycles >= end_cycle - 1 || self.state.time >= end_time) {
+            if !self.state.is_last_cycle && (cycles >= end_cycle - 1 || self.state.time >= end_time)
+            {
                 debug!("last cycle");
                 self.state.is_last_cycle = true;
             }
@@ -497,7 +507,11 @@ impl Graph {
         for _ in 0..max_layer + 1 {
             self.state.dirty_nodes_by_layer.push(vec![]);
         }
-        debug!("{:} nodes wired in {:?}", self.state.nodes.len(), timer.elapsed());
+        debug!(
+            "{:} nodes wired in {:?}",
+            self.state.nodes.len(),
+            timer.elapsed()
+        );
         self
     }
 
@@ -656,7 +670,11 @@ impl Graph {
         for i in 0..self.state.nodes.len() {
             writeln!(output, "    node [")?;
             writeln!(output, "        id {i}")?;
-            writeln!(output, "        label \"[{i}] {}\"", self.state.nodes[i].node)?;
+            writeln!(
+                output,
+                "        label \"[{i}] {}\"",
+                self.state.nodes[i].node
+            )?;
             writeln!(output, "        graphics")?;
             writeln!(output, "        [")?;
             writeln!(output, "            w 200.0")?;
