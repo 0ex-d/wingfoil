@@ -153,7 +153,7 @@ impl<T: Element + Send> AsyncChannelSender<T> {
             .await
             .unwrap();
         if let Some(notifier) = &self.ready_notifier {
-            notifier.notify();
+            notifier.notify().unwrap();
         }
     }
 

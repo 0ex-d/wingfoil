@@ -7,6 +7,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::rc::Rc;
 use tinyvec::TinyVec;
+use anyhow::anyhow;
 
 /// A convenience alias for [`futures::Stream`] with items of type `(NanoTime, T)`.
 /// used by [StreamOperators::consume_async].
@@ -55,7 +56,10 @@ where
     FUT: Future<Output = ()> + Send + 'static,
 {
     fn cycle(&mut self, state: &mut GraphState) -> bool {
-        self.sender.send(state, self.source.peek_value());
+        let res = self.sender.send(state, self.source.peek_value());
+        if  res.is_err() {
+            state.terminate(res.map_err(|e| anyhow!(e)));
+        }
         true
     }
 
@@ -80,8 +84,11 @@ where
         self.handle = Some(handle);
     }
 
-    fn stop(&mut self, _: &mut GraphState) {
-        self.sender.close();
+    fn stop(&mut self, state : &mut GraphState) {
+        let res = self.sender.close();
+        if res.is_err() {
+            state.terminate(res.map_err(|e| anyhow!(e)));
+        }
     }
 
     fn teardown(&mut self, state: &mut GraphState) {
