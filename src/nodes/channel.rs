@@ -7,6 +7,7 @@ use std::collections::VecDeque;
 use std::option::Option;
 use std::rc::Rc;
 use tinyvec::TinyVec;
+use anyhow::anyhow;
 
 pub(crate) trait ChannelOperators<T>
 where
@@ -35,15 +36,23 @@ impl<T: Element + Send> MutableNode for SenderNode<T> {
     fn cycle(&mut self, state: &mut GraphState) -> bool {
         //println!("SenderNode::cycle");
         if state.ticked(self.source.clone().as_node()) {
-            self.sender.send(state, self.source.peek_value());
+            let res = self.sender.send(state, self.source.peek_value());
+            if res.is_err() {
+                state.terminate(res.map_err(|e| {anyhow!(e)}));
+            }
             true
         } else {
             match &self.trigger {
                 Some(trig) => {
                     debug_assert!(state.ticked(trig.clone()));
-                    self.sender.send_checkpoint(state);
+                    let res = self.sender.send_checkpoint(state);
+                    if res.is_err() {
+                        state.terminate(res.map_err(|e| {anyhow!(e)}));
+                    }
                 }
-                None => panic!(),
+                None => {
+                    state.terminate(Err(anyhow!("None trigger!")));
+                }
             }
             false
         }
@@ -57,8 +66,11 @@ impl<T: Element + Send> MutableNode for SenderNode<T> {
         UpStreams::new(upstreams, Vec::new())
     }
 
-    fn stop(&mut self, _: &mut GraphState) {
-        self.sender.send_message(Message::EndOfStream);
+    fn stop(&mut self, state: &mut GraphState) {
+        let res = self.sender.send_message(Message::EndOfStream);
+        if res.is_err() {
+            state.terminate(res.map_err(|e| anyhow!(e)));
+        }
     }
 }
 

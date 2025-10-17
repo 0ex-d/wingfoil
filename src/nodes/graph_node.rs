@@ -11,6 +11,7 @@ use std::rc::Rc;
 use std::time::Duration;
 use std::{thread, vec};
 use tinyvec::TinyVec;
+use anyhow::anyhow;
 
 #[derive(Debug, Default)]
 enum GraphProducerStreamState<T, FUNC>
@@ -185,10 +186,13 @@ where
 
     fn cycle(&mut self, graph_state: &mut GraphState) -> bool {
         if graph_state.ticked(self.source.clone()) {
-            self.sender
+            let res = self.sender
                 .get_mut()
                 .unwrap()
                 .send(graph_state, self.source.peek_value());
+            if res.is_err() {
+            graph_state.terminate(res.map_err(|e| anyhow!(e)));
+            }
         }
 
         self.receiver_stream.cycle(graph_state)
@@ -239,8 +243,11 @@ where
         self.receiver_stream.setup(graph_state);
     }
 
-    fn stop(&mut self, _: &mut GraphState) {
-        self.sender.get_mut().unwrap().close();
+    fn stop(&mut self, state: &mut GraphState) {
+        let res = self.sender.get_mut().unwrap().close();
+        if res.is_err() {
+            state.terminate(res.map_err(|e| anyhow!(e)));
+        }
     }
 
     fn teardown(&mut self, graph_state: &mut GraphState) {

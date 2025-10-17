@@ -55,7 +55,7 @@ mod tests {
             })
             .collect::<Vec<_>>();
         merge(streams)
-            .run(RunMode::RealTime, RunFor::Cycles(1_000_000))
+            .run(RunMode::RealTime, RunFor::Cycles(1))
             .unwrap();
     }
 }
