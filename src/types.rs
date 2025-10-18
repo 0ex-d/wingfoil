@@ -89,7 +89,7 @@ pub trait StreamPeekRef<T>: MutableNode {
 /// can be peeked at.
 pub trait StreamPeek<T> {
     fn peek_value(&self) -> T;
-    fn peek_ref_cell(&self) -> std::cell::Ref<T>;
+    fn peek_ref_cell(&self) -> std::cell::Ref<'_, T>;
 }
 
 /// A [Node] which has some state that can peeked at.
@@ -135,7 +135,7 @@ where
     STREAM: StreamPeekRef<T>,
     T: Clone,
 {
-    fn peek_ref_cell(&self) -> std::cell::Ref<T> {
+    fn peek_ref_cell(&self) -> std::cell::Ref<'_, T> {
         std::cell::Ref::map(self.borrow(), |strm| strm.peek_ref())
     }
     fn peek_value(&self) -> T {
